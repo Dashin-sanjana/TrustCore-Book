@@ -1,0 +1,10 @@
+import { z } from "zod";
+import { idSchema, resultSchema } from "@/shared/contracts/result";
+export { loginSchema, registerSchema } from "@/lib/validation";
+import { loginSchema } from "@/lib/validation";
+export const requestSchema = loginSchema;
+export const responseSchema = z.object({ userId: idSchema });
+export const operation = "signIn" as const;
+export type Request = z.input<typeof requestSchema>;
+export type Response = z.output<typeof responseSchema>;
+export const resultSchemaForFeature = resultSchema(responseSchema);

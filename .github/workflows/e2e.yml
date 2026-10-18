@@ -1,0 +1,27 @@
+name: E2E preparation smoke tests
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXTAUTH_URL: http://127.0.0.1:3100
+      # Loopback placeholder only. These read-only smoke tests do not query a DB.
+      DATABASE_URL: postgresql://localhost:5432/trustcore_unconfigured
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ephemeral authentication secret
+        run: node -e 'const secret=require("node:crypto").randomBytes(48).toString("base64url"); console.log("::add-mask::"+secret); require("node:fs").appendFileSync(process.env.GITHUB_ENV,"NEXTAUTH_SECRET="+secret+"\n");'
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e

@@ -1,0 +1,56 @@
+name: Foundation CI
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: trustcore_ci
+          POSTGRES_DB: trustcore_ci_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U trustcore_ci -d trustcore_ci_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DIRECT_URL: postgresql://trustcore_ci@localhost:5432/trustcore_ci_test
+      TEST_DATABASE_URL: postgresql://trustcore_ci@localhost:5432/trustcore_ci_test
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install PostgreSQL test client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Architecture boundaries
+        run: pnpm check:boundaries
+      - name: Prisma schema
+        run: pnpm db:validate
+      - name: Apply migrations to disposable database
+        run: pnpm db:deploy
+      - name: Lint
+        run: pnpm lint
+      - name: TypeScript
+        run: pnpm typecheck
+      - name: Unit, component and database tests
+        run: pnpm test
+      - name: Production build
+        run: pnpm build
+      - name: Verify E2E preparation
+        run: pnpm test:e2e:list

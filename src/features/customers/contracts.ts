@@ -1,0 +1,10 @@
+import { z } from "zod";
+import { recordSchema, resultSchema } from "@/shared/contracts/result";
+export { customerSchema } from "@/lib/validation";
+import { customerSchema } from "@/lib/validation";
+export const requestSchema = customerSchema;
+export const responseSchema = recordSchema;
+export const operation = "createCustomer" as const;
+export type Request = z.input<typeof requestSchema>;
+export type Response = z.output<typeof responseSchema>;
+export const resultSchemaForFeature = resultSchema(responseSchema);

@@ -1,0 +1,8 @@
+node_modules
+.next
+src/generated
+pnpm-lock.yaml
+README.original.md
+playwright-report
+test-results
+blob-report

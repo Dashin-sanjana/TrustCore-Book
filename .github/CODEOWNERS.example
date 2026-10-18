@@ -1,0 +1,21 @@
+# EXAMPLE ONLY: replace these handles with the two actual GitHub users/teams,
+# then rename to .github/CODEOWNERS and configure required review rules.
+* @developer-a @developer-b
+/src/features/services/ @developer-b
+/src/features/staff/ @developer-b
+/src/features/availability/ @developer-b
+/src/features/customers/ @developer-b
+/src/features/appointments/ @developer-b
+/src/features/public-booking/ @developer-b
+/src/features/notifications/ @developer-b
+/src/features/dashboard/ @developer-b
+/src/features/analytics/ @developer-b
+# Critical shared paths: author + independent other developer review required.
+/prisma/ @developer-a @developer-b
+/src/lib/auth.ts @developer-a @developer-b
+/src/server/authorization.ts @developer-a @developer-b
+/src/server/repositories/membership.ts @developer-a @developer-b
+/src/shared/ @developer-a @developer-b
+/src/features/booking-engine/ @developer-a @developer-b
+/src/features/localization/ @developer-a @developer-b
+/.github/ @developer-a @developer-b

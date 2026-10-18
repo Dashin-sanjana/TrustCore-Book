@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+:root {
+  --background: #f7f9fb;
+  --foreground: #172525;
+  --card: #fff;
+  --muted: #eef2f2;
+  --muted-foreground: #5c6e70;
+  --primary: #116b60;
+  --primary-foreground: #fff;
+  --border: #dfe7e6;
+  --accent: #e8f4ee;
+  --ring: #116b60;
+  --destructive: #b32e36;
+  --radius: 0.75rem;
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+  --background: #101b1c;
+  --foreground: #e9f1ef;
+  --card: #172526;
+  --muted: #213334;
+  --muted-foreground: #a4b9b6;
+  --primary: #80d4be;
+  --primary-foreground: #102924;
+  --border: #304345;
+  --accent: #243d36;
+  --ring: #80d4be;
+  --destructive: #ff9ba1;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+a,
+button {
+  touch-action: manipulation;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+::selection {
+  background: var(--accent);
+}
+.input {
+  width: 100%;
+  height: 2.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  padding: 0 0.8rem;
+  font-size: 0.9rem;
+  color: var(--foreground);
+}
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+h1,
+h2,
+h3 {
+  letter-spacing: -0.035em;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+.skip {
+  position: absolute;
+  top: -100px;
+  left: 1rem;
+  z-index: 100;
+  background: var(--card);
+  padding: 0.7rem;
+}
+.skip:focus {
+  top: 1rem;
+}

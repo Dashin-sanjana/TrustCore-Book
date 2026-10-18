@@ -1,0 +1,10 @@
+import { z } from "zod";
+import { idSchema, resultSchema } from "@/shared/contracts/result";
+export { businessSchema } from "@/lib/validation";
+import { businessSchema } from "@/lib/validation";
+export const requestSchema = businessSchema;
+export const responseSchema = z.object({ businessId: idSchema });
+export const operation = "createBusiness" as const;
+export type Request = z.input<typeof requestSchema>;
+export type Response = z.output<typeof responseSchema>;
+export const resultSchemaForFeature = resultSchema(responseSchema);
