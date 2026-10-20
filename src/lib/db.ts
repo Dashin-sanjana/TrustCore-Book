@@ -9,7 +9,7 @@ export function db() {
       adapter: new PrismaPg({
         connectionString: getEnv().DATABASE_URL,
         max: 5,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 15000,
         idleTimeoutMillis: 10000,
       }),
     });

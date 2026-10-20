@@ -1,4 +1,5 @@
 node_modules
+.local
 .next
 src/generated
 pnpm-lock.yaml

@@ -1,0 +1,149 @@
+export type ScheduleRule = {
+  weekday: number;
+  startMinute: number;
+  endMinute: number;
+};
+export type TimeBlock = { startsAt: Date; endsAt: Date };
+
+const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function businessLocalDate(instant: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(instant);
+  const value = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+export function resolveBusinessLocalTime(
+  date: string,
+  time: string,
+  timezone: string,
+) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)
+  )
+    return null;
+  const base = Date.parse(`${date}T${time}:00Z`);
+  if (!Number.isFinite(base)) return null;
+  const matches: Date[] = [];
+  for (let offset = -14 * 60; offset <= 14 * 60; offset += 15) {
+    const candidate = new Date(base + offset * 60_000);
+    const local = localParts(candidate, timezone);
+    if (
+      local.day === date &&
+      local.minute === Number(time.slice(0, 2)) * 60 + Number(time.slice(3))
+    )
+      matches.push(candidate);
+  }
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function localParts(instant: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hourCycle: "h23",
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(instant);
+  const value = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    day: `${value("year")}-${value("month")}-${value("day")}`,
+    weekday: weekdays.indexOf(value("weekday")),
+    minute: Number(value("hour")) * 60 + Number(value("minute")),
+  };
+}
+
+export function isBookableInterval(input: {
+  startsAt: Date;
+  endsAt: Date;
+  timezone: string;
+  rules: ScheduleRule[];
+  exceptions: TimeBlock[];
+  appointments: TimeBlock[];
+}) {
+  const { startsAt, endsAt, timezone, rules, exceptions, appointments } = input;
+  if (!(endsAt > startsAt)) return false;
+  const start = localParts(startsAt, timezone);
+  const end = localParts(new Date(endsAt.getTime() - 1), timezone);
+  // Rules cannot span local midnight. Testing the last occupied minute also
+  // handles a slot ending exactly at midnight.
+  if (start.day !== end.day) return false;
+  const endMinute = end.minute + 1;
+  if (
+    endMinute - start.minute !==
+    (endsAt.getTime() - startsAt.getTime()) / 60_000
+  )
+    return false;
+  if (
+    !rules.some(
+      (rule) =>
+        rule.weekday === start.weekday &&
+        start.minute >= rule.startMinute &&
+        endMinute <= rule.endMinute,
+    )
+  )
+    return false;
+  return ![...exceptions, ...appointments].some(
+    (block) => startsAt < block.endsAt && endsAt > block.startsAt,
+  );
+}
+
+export function computeSlots(input: {
+  from: Date;
+  to: Date;
+  durationMinutes: number;
+  timezone: string;
+  rules: ScheduleRule[];
+  exceptions: TimeBlock[];
+  appointments: TimeBlock[];
+  now?: Date;
+}) {
+  const {
+    from,
+    to,
+    durationMinutes,
+    timezone,
+    rules,
+    exceptions,
+    appointments,
+  } = input;
+  const first =
+    Math.ceil(
+      Math.max(
+        from.getTime(),
+        (input.now ?? new Date()).getTime() + 60 * 60_000,
+      ) / 1_800_000,
+    ) * 1_800_000;
+  const slots: TimeBlock[] = [];
+  for (
+    let time = first;
+    time + durationMinutes * 60_000 <= to.getTime();
+    time += 1_800_000
+  ) {
+    const startsAt = new Date(time);
+    const endsAt = new Date(time + durationMinutes * 60_000);
+    if (
+      isBookableInterval({
+        startsAt,
+        endsAt,
+        timezone,
+        rules,
+        exceptions,
+        appointments,
+      })
+    )
+      slots.push({ startsAt, endsAt });
+  }
+  return slots;
+}

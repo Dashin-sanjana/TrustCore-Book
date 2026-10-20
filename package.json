@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "next dev",
+    "setup:local": "node scripts/setup-local.mjs",
+    "dev:check": "node scripts/check-development-target.mjs",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
@@ -18,6 +20,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
+    "seed:dev": "node --import tsx prisma/seed.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "format": "prettier --write .",
     "postinstall": "prisma generate",

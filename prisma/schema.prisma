@@ -1,3 +1,5 @@
+// Phase A1/A2 and booking additions require coordinated forward migrations.
+// The booking migration is PREPARED, NOT APPLIED; do not enable booking on an old schema.
 generator client {
   provider = "prisma-client"
   output = "../src/generated/prisma"
@@ -9,6 +11,10 @@ enum MemberRole {
   OWNER
   ADMIN
   MEMBER
+}
+enum AccountTokenPurpose {
+  VERIFY_EMAIL
+  RESET_PASSWORD
 }
 enum AppointmentStatus {
   PENDING
@@ -23,9 +29,15 @@ model User {
   name String
   passwordHash String
   platformAdmin Boolean @default(false)
+  emailVerificationRequired Boolean @default(false)
+  emailVerifiedAt DateTime? @db.Timestamptz(3)
+  credentialVersion Int @default(0)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   memberships BusinessMember[]
+  sentInvitations BusinessInvitation[] @relation("InvitationInviter")
+  acceptedInvitations BusinessInvitation[] @relation("InvitationAccepter")
   sessions RefreshSession[]
+  securityTokens AccountSecurityToken[]
   auditLogs AuditLog[]
 }
 model Business {
@@ -37,10 +49,12 @@ model Business {
   timezone String
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   members BusinessMember[]
+  invitations BusinessInvitation[]
   staff Staff[]
   services Service[]
   customers Customer[]
   appointments Appointment[]
+  bookingRequests BookingRequest[]
   auditLogs AuditLog[]
 }
 model BusinessMember {
@@ -52,6 +66,27 @@ model BusinessMember {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([businessId, userId])
   @@index([userId])
+}
+model BusinessInvitation {
+  id String @id @default(cuid())
+  businessId String
+  invitedEmail String
+  role MemberRole
+  tokenDigest String @unique
+  invitedById String
+  acceptedById String?
+  expiresAt DateTime @db.Timestamptz(3)
+  acceptedAt DateTime? @db.Timestamptz(3)
+  declinedAt DateTime? @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  invitedBy User @relation("InvitationInviter", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedBy User? @relation("InvitationAccepter", fields: [acceptedById], references: [id], onDelete: SetNull)
+  @@index([businessId, expiresAt])
+  @@index([businessId, invitedEmail, expiresAt])
+  @@index([invitedById])
+  @@index([acceptedById])
 }
 model Staff {
   id String @id @default(cuid())
@@ -136,18 +171,43 @@ model Appointment {
   staff Staff @relation(fields: [businessId, staffId], references: [businessId, id], onDelete: Restrict)
   service Service @relation(fields: [businessId, serviceId], references: [businessId, id], onDelete: Restrict)
   customer Customer @relation(fields: [businessId, customerId], references: [businessId, id], onDelete: Restrict)
+  bookingRequests BookingRequest[]
   @@unique([businessId, id])
   @@index([businessId, startsAt])
+}
+model BookingRequest {
+  id String @id @default(cuid())
+  businessId String
+  idempotencyKey String
+  payloadHash String
+  appointmentId String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  appointment Appointment @relation(fields: [businessId, appointmentId], references: [businessId, id], onDelete: Restrict)
+  @@unique([businessId, idempotencyKey])
+  @@index([businessId, createdAt])
 }
 model RefreshSession {
   // Revocation record for Auth.js encrypted JWT, not a browser-exposed refresh token.
   id String @id @default(cuid())
   userId String
+  credentialVersion Int @default(0)
   expiresAt DateTime @db.Timestamptz(3)
   revokedAt DateTime? @db.Timestamptz(3)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId, expiresAt])
+}
+model AccountSecurityToken {
+  id String @id @default(cuid())
+  userId String
+  purpose AccountTokenPurpose
+  digest String @unique
+  expiresAt DateTime @db.Timestamptz(3)
+  consumedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, purpose, expiresAt])
 }
 model AuditLog {
   id String @id @default(cuid())

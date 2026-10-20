@@ -11,6 +11,10 @@ import { BusinessForm } from "@/components/business-form";
 import { Card } from "@/components/ui/card";
 import { localTime, money } from "@/lib/utils";
 import type { z } from "zod";
+import { StaffEditor } from "@/features/staff/staff-editor";
+import { ServiceEditor } from "@/features/services/service-editor";
+import { AppointmentControls } from "@/features/appointments/appointment-controls";
+import { businessLocalDate } from "@/features/booking-engine/slots";
 const config = {
   appointments: {
     title: "Appointments",
@@ -117,11 +121,6 @@ export default async function Page({
       <p className="mb-8 mt-2 text-sm leading-6 text-muted-foreground">
         {config[key].desc}
       </p>
-      {key === "services" && (
-        <p className="mb-5 text-sm text-muted-foreground">
-          Not implemented: service categories and edit/archive workflows.
-        </p>
-      )}
       {key === "settings" ? (
         <Card>
           <h2 className="mb-6 text-lg font-semibold">Business profile</h2>
@@ -157,12 +156,6 @@ export default async function Page({
                 currency={business.currency}
               />
             )}
-          {key === "appointments" && (
-            <p className="mb-6 rounded-lg border border-border bg-accent p-4 text-sm text-muted-foreground">
-              Not implemented: online booking. Appointment creation will be
-              added with the booking engine.
-            </p>
-          )}
           <DataTable
             columns={columns}
             rows={rows}
@@ -179,6 +172,56 @@ export default async function Page({
                   : "An owner or admin can add records to this workspace."
             }
           />
+          {manage && key === "services" && (
+            <ServiceEditor
+              businessId={businessId}
+              currency={business.currency}
+              services={data.services.map((service) => ({
+                ...service,
+                price: service.price.toString(),
+              }))}
+            />
+          )}
+          {manage && key === "staff" && (
+            <StaffEditor
+              businessId={businessId}
+              staff={data.staff.map((person) => ({
+                id: person.id,
+                name: person.name,
+                active: person.active,
+                serviceIds: person.services.map((row) => row.serviceId),
+                rules: person.availability.map((rule) => ({
+                  weekday: rule.weekday,
+                  startMinute: rule.startMinute,
+                  endMinute: rule.endMinute,
+                })),
+                timeOff: person.exceptions.map((exception) => ({
+                  id: exception.id,
+                  startsAt: exception.startsAt.toISOString(),
+                  endsAt: exception.endsAt.toISOString(),
+                })),
+              }))}
+              services={data.services.map((service) => ({
+                id: service.id,
+                name: service.name,
+                active: service.active,
+              }))}
+              timezone={business.timezone}
+              today={businessLocalDate(new Date(), business.timezone)}
+            />
+          )}
+          {manage && key === "appointments" && (
+            <AppointmentControls
+              businessId={businessId}
+              timezone={business.timezone}
+              appointments={data.appointments.map((appointment) => ({
+                id: appointment.id,
+                customer: appointment.customer.name,
+                startsAt: appointment.startsAt.toISOString(),
+                status: appointment.status,
+              }))}
+            />
+          )}
           {(key === "customers" || key === "appointments") && (
             <p className="mt-4 text-xs text-muted-foreground">
               Showing up to the 100 most recent records.

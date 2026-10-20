@@ -91,6 +91,12 @@ label {
   font-size: 0.85rem;
   margin-bottom: 0.4rem;
 }
+.input.booking-address-input {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+}
 h1,
 h2,
 h3 {

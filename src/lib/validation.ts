@@ -1,8 +1,12 @@
 import { hasPermission } from "@/shared/policies/permissions";
 import { z } from "zod";
 export const loginSchema = z.object({
-  email: z.email().max(254).trim().toLowerCase(),
-  password: z.string().min(1).max(72),
+  email: z.string().trim().toLowerCase().pipe(z.email().max(254)),
+  password: z
+    .string()
+    .min(1)
+    .max(72)
+    .refine((v) => new TextEncoder().encode(v).length <= 72),
 });
 export const registerSchema = loginSchema.extend({
   name: z.string().trim().min(2).max(100),
@@ -14,6 +18,20 @@ export const registerSchema = loginSchema.extend({
       (v) => new TextEncoder().encode(v).length <= 72,
       "Use at most 72 UTF-8 bytes",
     ),
+});
+export const profileSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+});
+export const passwordChangeSchema = z.object({
+  currentPassword: loginSchema.shape.password,
+  newPassword: registerSchema.shape.password,
+});
+export const accountEmailSchema = z.object({
+  email: loginSchema.shape.email,
+});
+export const resetPasswordSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
+  password: registerSchema.shape.password,
 });
 export const markets = {
   LK: { name: "Sri Lanka", currency: "LKR", timezone: "Asia/Colombo" },
@@ -56,6 +74,33 @@ export const serviceSchema = z.object({
 });
 export const staffSchema = z.object({
   name: z.string().trim().min(2).max(100),
+});
+export const serviceEditSchema = serviceSchema.extend({
+  id: z.string().cuid(),
+  active: z.boolean(),
+});
+export const staffEditSchema = staffSchema.extend({
+  id: z.string().cuid(),
+  active: z.boolean(),
+});
+export const staffScheduleSchema = z.object({
+  staffId: z.string().cuid(),
+  serviceIds: z.array(z.string().cuid()).max(100),
+  rules: z
+    .array(
+      z
+        .object({
+          weekday: z.number().int().min(0).max(6),
+          startMinute: z.number().int().min(0).max(1439),
+          endMinute: z.number().int().min(1).max(1440),
+        })
+        .refine((rule) => rule.endMinute > rule.startMinute),
+    )
+    .max(7)
+    .refine(
+      (rules) =>
+        new Set(rules.map((rule) => rule.weekday)).size === rules.length,
+    ),
 });
 export const customerSchema = staffSchema.extend({
   email: z.union([z.email().max(254), z.literal("")]),

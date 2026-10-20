@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { AuthForm } from "@/components/auth-form";
+import { ThemeSelect } from "@/components/theme-select";
 export default function Page() {
   return (
     <div className="min-h-screen">
-      <header className="p-6 md:p-10">
+      <header className="flex items-center justify-between gap-4 p-6 md:p-10">
         <Brand />
+        <ThemeSelect />
       </header>
       <main
         id="main"

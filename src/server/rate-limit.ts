@@ -2,6 +2,14 @@ import "server-only";
 import { createHmac } from "node:crypto";
 import { incrementRateLimit } from "./repositories/security";
 import { getEnv } from "@/lib/env";
+
+export class RateLimitExceededError extends Error {
+  constructor() {
+    super("Too many attempts. Please try again later.");
+    this.name = "RateLimitExceededError";
+  }
+}
+
 export async function rateLimit(
   identity: string,
   limit = 10,
@@ -16,6 +24,5 @@ export async function rateLimit(
     key,
     new Date((bucket + 1) * windowSeconds * 1000),
   );
-  if (row.count > limit)
-    throw new Error("Too many attempts. Please try again later.");
+  if (row.count > limit) throw new RateLimitExceededError();
 }

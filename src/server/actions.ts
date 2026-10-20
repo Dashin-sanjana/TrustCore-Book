@@ -6,11 +6,51 @@ import {
   createBusinessService,
   createRecordService,
   updateBusinessService,
+  editCatalogRecordService,
+  saveStaffScheduleService,
+  changeAppointmentStatusService,
+  addStaffTimeOffService,
+  removeStaffTimeOffService,
+  updateOwnProfileService,
+  revokeOwnSessionService,
+  revokeAllOwnSessionsService,
+  changeOwnPasswordService,
+  requestAccountEmailService,
+  verifyEmailService,
+  resetPasswordService,
 } from "./services";
 import type { ActionResult } from "./services";
+import { getPublicSlots, createPublicBooking } from "./public-booking";
+import { bookingClientId } from "./anonymous-booking";
+import {
+  inviteMember,
+  cancelInvitation,
+  respondToInvitation,
+  setMemberRole,
+  removeMember,
+  transferBusinessOwnership,
+} from "./membership";
 export type { ActionResult } from "./services";
+export async function loadPublicSlots(input: unknown) {
+  return getPublicSlots(input, await bookingClientId());
+}
+export async function submitPublicBooking(input: unknown) {
+  return createPublicBooking(input, await bookingClientId());
+}
 export async function register(input: unknown): Promise<ActionResult> {
   return registerAccountService(input);
+}
+export async function resendVerification(input: unknown) {
+  return requestAccountEmailService("VERIFY_EMAIL", input);
+}
+export async function forgotPassword(input: unknown) {
+  return requestAccountEmailService("RESET_PASSWORD", input);
+}
+export async function verifyEmail(token: string) {
+  return verifyEmailService(token);
+}
+export async function resetPassword(input: unknown) {
+  return resetPasswordService(input);
 }
 export async function onboard(input: unknown): Promise<ActionResult> {
   const result = await createBusinessService(input);
@@ -26,11 +66,94 @@ export async function createRecord(
   if (result.success) revalidatePath(`/app/${businessId}`, "layout");
   return result;
 }
+export async function editCatalogRecord(
+  businessId: string,
+  kind: "services" | "staff",
+  input: unknown,
+) {
+  const result = await editCatalogRecordService(businessId, kind, input);
+  if (result.success) revalidatePath(`/app/${businessId}`, "layout");
+  return result;
+}
+export async function saveStaffSchedule(businessId: string, input: unknown) {
+  const result = await saveStaffScheduleService(businessId, input);
+  if (result.success) revalidatePath(`/app/${businessId}`, "layout");
+  return result;
+}
+export async function changeAppointmentStatus(
+  businessId: string,
+  id: string,
+  status: "CANCELLED" | "COMPLETED" | "NO_SHOW",
+) {
+  const result = await changeAppointmentStatusService(businessId, id, status);
+  if (result.success) revalidatePath(`/app/${businessId}`, "layout");
+  return result;
+}
+export async function addStaffTimeOff(businessId: string, input: unknown) {
+  const result = await addStaffTimeOffService(businessId, input);
+  if (result.success) revalidatePath(`/app/${businessId}`, "layout");
+  return result;
+}
+export async function removeStaffTimeOff(
+  businessId: string,
+  staffId: string,
+  id: string,
+) {
+  const result = await removeStaffTimeOffService(businessId, staffId, id);
+  if (result.success) revalidatePath(`/app/${businessId}`, "layout");
+  return result;
+}
 export async function updateBusiness(
   businessId: string,
   input: unknown,
 ): Promise<ActionResult> {
   const result = await updateBusinessService(businessId, input);
   if (result.success) revalidatePath(`/app/${businessId}`, "layout");
+  return result;
+}
+export async function updateOwnProfile(input: unknown): Promise<ActionResult> {
+  const result = await updateOwnProfileService(input);
+  if (result.success) revalidatePath("/account");
+  return result;
+}
+export async function revokeOwnSession(id: string) {
+  const result = await revokeOwnSessionService(id);
+  if (result.success) revalidatePath("/account");
+  return result;
+}
+export async function revokeAllOwnSessions() {
+  const result = await revokeAllOwnSessionsService();
+  if (result.success) revalidatePath("/account");
+  return result;
+}
+export async function changeOwnPassword(input: unknown) {
+  return changeOwnPasswordService(input);
+}
+export async function sendMemberInvitation(businessId: string, input: unknown) {
+  const result = await inviteMember(businessId, input);
+  if (result.success) revalidatePath(`/app/${businessId}/members`);
+  return result;
+}
+export async function revokeMemberInvitation(businessId: string, id: string) {
+  const result = await cancelInvitation(businessId, id);
+  if (result.success) revalidatePath(`/app/${businessId}/members`);
+  return result;
+}
+export async function answerMemberInvitation(token: string, accept: boolean) {
+  return respondToInvitation(token, accept);
+}
+export async function updateMemberRole(businessId: string, input: unknown) {
+  const result = await setMemberRole(businessId, input);
+  if (result.success) revalidatePath(`/app/${businessId}/members`);
+  return result;
+}
+export async function deleteMember(businessId: string, id: string) {
+  const result = await removeMember(businessId, id);
+  if (result.success) revalidatePath(`/app/${businessId}/members`);
+  return result;
+}
+export async function handOffOwnership(businessId: string, id: string) {
+  const result = await transferBusinessOwnership(businessId, id);
+  if (result.success) revalidatePath(`/app/${businessId}/members`);
   return result;
 }

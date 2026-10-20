@@ -11,7 +11,7 @@ export function findPublicBusiness(slug: string) {
       country: true,
       services: {
         where: { active: true },
-        select: { name: true, durationMinutes: true, price: true },
+        select: { id: true, name: true, durationMinutes: true, price: true },
         orderBy: { name: "asc" },
       },
     },

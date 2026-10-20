@@ -1,5 +1,6 @@
 import { getNavigation } from "@/server/queries";
 import { WorkspaceNav } from "@/components/workspace-nav";
+import { hasPermission } from "@/shared/policies/permissions";
 export default async function Layout({
   children,
   params,
@@ -16,6 +17,7 @@ export default async function Layout({
         businessId={businessId}
         name={business.name}
         slug={business.slug}
+        canManageMembers={hasPermission(member.role, "members.manage")}
         businesses={memberships.map((m) => ({
           id: m.business.id,
           name: m.business.name,

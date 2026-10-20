@@ -16,10 +16,13 @@ import { Card } from "@/components/ui/card";
 export default function Home() {
   return (
     <>
-      <header className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-6 md:px-10">
+      <header className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-6 md:px-10">
         <Brand />
-        <nav aria-label="Main navigation" className="flex items-center gap-3">
-          <div className="hidden md:block">
+        <nav
+          aria-label="Main navigation"
+          className="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto"
+        >
+          <div className="order-3 w-full sm:order-none sm:w-auto">
             <ThemeSelect />
           </div>
           <Link

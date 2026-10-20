@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
+import { approvedDevelopmentDatabase } from "./development-database-target";
 const run = promisify(execFile);
 const url = process.env.TEST_DATABASE_URL;
 const suite = url ? describe : describe.skip;
@@ -39,16 +40,24 @@ function appointment(
 }
 suite("PostgreSQL tenant and booking constraints", () => {
   beforeAll(async () => {
-    if (!url || !new URL(url).pathname.endsWith("_test"))
+    if (
+      !url ||
+      (!new URL(url).pathname.endsWith("_test") &&
+        !approvedDevelopmentDatabase(url))
+    )
       throw new Error(
-        "TEST_DATABASE_URL must name a dedicated database ending in _test.",
+        "TEST_DATABASE_URL must name an approved development test target.",
       );
     await sql(
       `INSERT INTO "Business" (id,name,slug,country,currency,timezone) VALUES ('${a}','Test A','${a}','LK','LKR','Asia/Colombo'),('${b}','Test B','${b}','LK','LKR','Asia/Colombo'); INSERT INTO "Staff" (id,"businessId",name) VALUES ('${staff}','${a}','Test staff'); INSERT INTO "Service" (id,"businessId",name,"durationMinutes",price) VALUES ('${service}','${a}','Test service',30,100); INSERT INTO "Customer" (id,"businessId",name) VALUES ('${customer}','${a}','Test customer'),('${prefix}-foreign','${b}','Foreign customer');`,
     );
   });
   afterAll(async () => {
-    if (url && new URL(url).pathname.endsWith("_test"))
+    if (
+      url &&
+      (new URL(url).pathname.endsWith("_test") ||
+        approvedDevelopmentDatabase(url))
+    )
       await sql(
         `DELETE FROM "Appointment" WHERE "businessId" IN ('${a}','${b}'); DELETE FROM "Business" WHERE id IN ('${a}','${b}');`,
       );

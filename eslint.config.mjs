@@ -4,5 +4,5 @@ import ts from "eslint-config-next/typescript";
 export default defineConfig([
   ...next,
   ...ts,
-  globalIgnores([".next/**", "src/generated/**"]),
+  globalIgnores([".next/**", ".local/**", "src/generated/**"]),
 ]);

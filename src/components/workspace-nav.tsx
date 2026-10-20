@@ -14,6 +14,8 @@ import {
   Plus,
   ChevronDown,
   Grid2X2,
+  UserRound,
+  UsersRound,
 } from "lucide-react";
 import { ThemeSelect } from "./theme-select";
 import { Brand } from "./brand";
@@ -31,11 +33,13 @@ export function WorkspaceNav({
   businessId,
   name,
   slug,
+  canManageMembers,
   businesses,
 }: {
   businessId: string;
   name: string;
   slug: string;
+  canManageMembers: boolean;
   businesses: { id: string; name: string }[];
 }) {
   const path = usePathname();
@@ -85,6 +89,19 @@ export function WorkspaceNav({
             </Link>
           );
         })}
+        {canManageMembers && (
+          <Link
+            aria-current={path === `${base}/members` ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted",
+              path === `${base}/members` && "bg-accent text-primary",
+            )}
+            href={`${base}/members`}
+          >
+            <UsersRound size={18} />
+            Members
+          </Link>
+        )}
       </nav>
       <div className="mt-8 border-t border-border pt-5">
         <div className="mb-3 px-3">
@@ -96,6 +113,13 @@ export function WorkspaceNav({
         >
           Public page
           <ArrowUpRight size={16} />
+        </Link>
+        <Link
+          href="/account"
+          className="flex items-center gap-3 rounded-lg p-3 text-sm text-muted-foreground hover:bg-muted"
+        >
+          <UserRound size={17} />
+          Your account
         </Link>
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}

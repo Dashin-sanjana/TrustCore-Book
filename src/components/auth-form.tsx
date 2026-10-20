@@ -28,11 +28,34 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     try {
       if (isRegister) {
         const result = await registerAccount(values);
-        setSuccess(!!result.success);
-        setMessage(result.error ?? result.success ?? "");
+        if (result.error) {
+          setMessage(result.error);
+          return;
+        }
+        setSuccess(true);
+        try {
+          const session = await signIn("credentials", {
+            email: values.email,
+            password: values.password,
+            redirect: false,
+            callbackUrl: "/app",
+          });
+          if (session?.ok) {
+            router.push("/app");
+            router.refresh();
+            return;
+          }
+        } catch {
+          // Registration may have succeeded even if immediate sign-in is unavailable.
+        }
+        setMessage(
+          result.success ??
+            "If this address is available, sign in with your password.",
+        );
       } else {
         const result = await signIn("credentials", {
-          ...values,
+          email: values.email,
+          password: values.password,
           redirect: false,
           callbackUrl: "/app",
         });
@@ -49,7 +72,12 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     }
   }
   return (
-    <form onSubmit={handleSubmit(submit)} className="space-y-5">
+    <form
+      action={isRegister ? "/register" : "/login"}
+      method="post"
+      onSubmit={handleSubmit(submit)}
+      className="space-y-5"
+    >
       {isRegister && (
         <div>
           <label htmlFor="name">Full name</label>
@@ -107,7 +135,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           className={`rounded-lg p-3 text-sm ${success ? "bg-accent text-primary" : "bg-muted text-destructive"}`}
         >
           {message}
-          {success && (
+          {success && isRegister && (
             <>
               {" "}
               <Link className="underline" href="/login">
@@ -128,6 +156,16 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             ? "Create account"
             : "Sign in"}
       </Button>
+      {!isRegister && (
+        <div className="text-sm">
+          <Link
+            href="/forgot-password"
+            className="text-primary hover:underline"
+          >
+            Forgot password?
+          </Link>
+        </div>
+      )}
     </form>
   );
 }

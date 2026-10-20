@@ -11,7 +11,7 @@ export function ThemeSelect() {
     () => false,
   );
   return (
-    <div className="w-36">
+    <div className="w-28 sm:w-36">
       <label className="sr-only" htmlFor={id}>
         Color theme
       </label>

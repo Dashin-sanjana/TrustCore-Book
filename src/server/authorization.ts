@@ -13,11 +13,15 @@ export type TenantContext = {
 };
 import { canManage } from "@/lib/validation";
 export async function requireUser() {
+  const record = await requireUserSession();
+  return record.user;
+}
+export async function requireUserSession() {
   const session = await getServerSession(authOptions());
   if (!session?.user.id || !session.sessionId) redirect("/login");
   const record = await findActiveSession(session.sessionId, session.user.id);
   if (!record) redirect("/login");
-  return record.user;
+  return record;
 }
 export async function requireTenant(businessId: string, manage = false) {
   const user = await requireUser();

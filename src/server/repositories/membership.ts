@@ -13,3 +13,15 @@ export function listMemberships(userId: string) {
     orderBy: { id: "asc" },
   });
 }
+export function listBusinessMembersPage(businessId: string, after?: string) {
+  return db().businessMember.findMany({
+    where: { businessId, ...(after ? { id: { gt: after } } : {}) },
+    select: {
+      id: true,
+      role: true,
+      user: { select: { name: true, email: true } },
+    },
+    orderBy: { id: "asc" },
+    take: 51,
+  });
+}

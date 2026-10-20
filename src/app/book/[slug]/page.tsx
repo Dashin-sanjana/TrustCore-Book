@@ -4,6 +4,8 @@ import { Brand } from "@/components/brand";
 import { Card } from "@/components/ui/card";
 import { CalendarDays, MapPin } from "lucide-react";
 import { money } from "@/lib/utils";
+import { BookingForm } from "@/features/public-booking/booking-form";
+import { businessLocalDate } from "@/features/booking-engine/slots";
 export const dynamic = "force-dynamic";
 export default async function Page({
   params,
@@ -14,6 +16,7 @@ export default async function Page({
   if (!/^[a-z0-9-]{3,60}$/.test(slug)) notFound();
   const business = await getPublicBusiness(slug);
   if (!business) notFound();
+  const now = new Date();
   return (
     <>
       <header className="border-b border-border bg-card p-6">
@@ -26,16 +29,30 @@ export default async function Page({
           <MapPin size={16} />
           {business.timezone} · {business.currency}
         </p>
-        <Card className="my-8 bg-accent">
-          <CalendarDays className="mb-4 text-primary" />
-          <h2 className="text-xl font-semibold">
-            Not implemented: online booking.
-          </h2>
-          <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            This business’s online scheduling is not available yet. Please
-            contact the business directly to arrange an appointment.
-          </p>
-        </Card>
+        {process.env.BOOKING_MVP_ENABLED === "true" &&
+        business.services.length ? (
+          <BookingForm
+            slug={slug}
+            timezone={business.timezone}
+            minDate={businessLocalDate(now, business.timezone)}
+            maxDate={businessLocalDate(
+              new Date(now.getTime() + 57 * 86400_000),
+              business.timezone,
+            )}
+            services={business.services.map((service) => ({
+              ...service,
+              price: service.price.toString(),
+            }))}
+          />
+        ) : (
+          <div className="my-8 border-y border-border py-6">
+            <CalendarDays className="mb-3 text-primary" />
+            <p className="text-sm text-muted-foreground">
+              Online booking is not available yet. Please contact the business
+              directly.
+            </p>
+          </div>
+        )}
         <h2 className="mb-5 text-xl font-semibold">Services</h2>
         {business.services.length ? (
           <div className="space-y-3">

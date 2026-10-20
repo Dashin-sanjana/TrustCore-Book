@@ -10,7 +10,7 @@ import {
 } from "@/server/repositories/identity";
 import { getEnv } from "./env";
 import { loginSchema } from "./validation";
-import { rateLimit } from "@/server/rate-limit";
+import { rateLimit, RateLimitExceededError } from "@/server/rate-limit";
 const MAX_AGE = 8 * 60 * 60;
 // A valid dummy hash makes unknown accounts follow the same password-verification path.
 const DUMMY = "$2b$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW";
@@ -31,14 +31,32 @@ export function authOptions(): NextAuthOptions {
         async authorize(credentials) {
           const input = loginSchema.safeParse(credentials);
           if (!input.success) return null;
-          await rateLimit(`login:${input.data.email}`, 10);
-          const user = await findCredentialsUser(input.data.email);
-          const valid = await compare(
-            input.data.password,
-            user?.passwordHash ?? DUMMY,
-          );
-          if (!user || !valid) return null;
-          return { id: user.id, name: user.name, email: user.email };
+          try {
+            await rateLimit(`login:${input.data.email}`, 10);
+            const user = await findCredentialsUser(input.data.email);
+            const valid = await compare(
+              input.data.password,
+              user?.passwordHash ?? DUMMY,
+            );
+            if (
+              !user ||
+              !valid ||
+              (user.emailVerificationRequired && !user.emailVerifiedAt)
+            )
+              return null;
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              credentialVersion: user.credentialVersion,
+            };
+          } catch (error) {
+            throw new Error(
+              error instanceof RateLimitExceededError
+                ? "Too many attempts. Please try again later."
+                : "Authentication temporarily unavailable. Try again later.",
+            );
+          }
         },
       }),
     ],
@@ -47,8 +65,11 @@ export function authOptions(): NextAuthOptions {
         if (user) {
           const record = await createSession(
             user.id,
+            user.credentialVersion ?? 0,
             new Date(Date.now() + MAX_AGE * 1000),
           );
+          if (!record)
+            throw new Error("Authentication state changed. Sign in again.");
           token.sid = record.id;
         }
         return token;
@@ -69,6 +90,7 @@ export function authOptions(): NextAuthOptions {
           session.user.id = token.sub ?? "";
           session.sessionId = record.id;
         }
+        session.expires = record.expiresAt.toISOString();
         return session;
       },
       async redirect({ url, baseUrl }) {
